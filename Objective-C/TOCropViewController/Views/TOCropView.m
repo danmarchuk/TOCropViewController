@@ -1243,37 +1243,37 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
 
 - (void)setEditing:(BOOL)editing resetCropBox:(BOOL)resetCropbox animated:(BOOL)animated
 {
-    if (editing == _editing)
-        return;
-    
-    _editing = editing;
-
-    // Toggle the visiblity of the gridlines when not editing
-    BOOL hidden = !_editing;
-    if (self.alwaysShowCroppingGrid) { hidden = NO; } // Override this if the user requires
-    [self.gridOverlayView setGridHidden:hidden animated:animated];
-    
-    if (resetCropbox) {
-        [self moveCroppedContentToCenterAnimated:animated];
-        [self captureStateForImageRotation];
-        self.cropBoxLastEditedAngle = self.angle;
-    }
-    
-    if (animated == NO) {
-        [self toggleTranslucencyViewVisible:!editing];
-        return;
-    }
-    
-    CGFloat duration = editing ? 0.05f : 0.35f;
-    CGFloat delay = editing? 0.0f : 0.35f;
-    
-    if (self.croppingStyle == TOCropViewCroppingStyleCircular) {
-        delay = 0.0f;
-    }
-    
-    [UIView animateKeyframesWithDuration:duration delay:delay options:0 animations:^{
-        [self toggleTranslucencyViewVisible:!editing];
-    } completion:nil];
+//    if (editing == _editing)
+//        return;
+//
+//    _editing = editing;
+//
+//    // Toggle the visiblity of the gridlines when not editing
+//    BOOL hidden = !_editing;
+//    if (self.alwaysShowCroppingGrid) { hidden = NO; } // Override this if the user requires
+//    [self.gridOverlayView setGridHidden:hidden animated:animated];
+//
+//    if (resetCropbox) {
+//        [self moveCroppedContentToCenterAnimated:animated];
+//        [self captureStateForImageRotation];
+//        self.cropBoxLastEditedAngle = self.angle;
+//    }
+//
+//    if (animated == NO) {
+//        [self toggleTranslucencyViewVisible:!editing];
+//        return;
+//    }
+//
+//    CGFloat duration = editing ? 0.05f : 0.35f;
+//    CGFloat delay = editing? 0.0f : 0.35f;
+//
+//    if (self.croppingStyle == TOCropViewCroppingStyleCircular) {
+//        delay = 0.0f;
+//    }
+//
+//    [UIView animateKeyframesWithDuration:duration delay:delay options:0 animations:^{
+//        [self toggleTranslucencyViewVisible:!editing];
+//    } completion:nil];
 }
 
 - (void)moveCroppedContentToCenterAnimated:(BOOL)animated

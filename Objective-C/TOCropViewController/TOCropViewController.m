@@ -26,6 +26,8 @@
 #import "TOActivityCroppedImageProvider.h"
 #import "UIImage+CropRotate.h"
 #import "TOCroppedImageAttributes.h"
+#import "TOCropViewConstants.h"
+
 
 static const CGFloat kTOCropViewControllerTitleTopPadding = 14.0f;
 static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
@@ -74,7 +76,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 - (instancetype)initWithCroppingStyle:(TOCropViewCroppingStyle)style image:(UIImage *)image
 {
     NSParameterAssert(image);
-
+    
     self = [super initWithNibName:nil bundle:nil];
     if (self) {
         // Init parameters
@@ -89,17 +91,17 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         
         // Controller object that handles the transition animation when presenting / dismissing this app
         _transitionController = [[TOCropViewControllerTransitioning alloc] init];
-
+        
         // Default initial behaviour
         _aspectRatioPreset = TOCropViewControllerAspectRatioPresetOriginal;
-
-        #if TARGET_OS_MACCATALYST
+        
+#if TARGET_OS_MACCATALYST
         _toolbarPosition = TOCropViewControllerToolbarPositionTop;
-        #else
+#else
         _toolbarPosition = TOCropViewControllerToolbarPositionBottom;
-        #endif
+#endif
     }
-	
+    
     return self;
 }
 
@@ -111,17 +113,149 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 - (void)viewDidLoad
 {
     [super viewDidLoad];
+    [self.view addSubview:self.cropView];
+    
+    
+    // Create the top bar view
+    UIView *topBar = [[UIView alloc] init];
+    topBar.translatesAutoresizingMaskIntoConstraints = NO;
+//    topBar.backgroundColor = [UIColor colorWithRed:246/255.0 green:246/255.0 blue:246/255.0 alpha:1.0];
+    [self.cropView addSubview:topBar];
+    
+    // Create the first button
+    UIButton *button1 = [UIButton buttonWithType:UIButtonTypeCustom];
+    [button1 setImage:[UIImage imageNamed:@"P"] forState:UIControlStateNormal];
+    [button1 setTitleColor:[UIColor blackColor] forState:UIControlStateNormal]; // You can set the color you want for the text
+    button1.backgroundColor = [UIColor colorWithRed:67/225.0 green:10/225.0 blue:224/225.0 alpha:1.0];
+    button1.layer.cornerRadius = 7;
+    
+    // Create a gray view to contain the search bar
+    UIView *grayView = [[UIView alloc] init];
+    grayView.backgroundColor = [UIColor colorWithRed:231/255.0 green:231/255.0 blue:232/255.0 alpha:1.0];
+    grayView.layer.cornerRadius = 7;
+    
+    // Create the search bar
+    UISearchBar *searchBar = [[UISearchBar alloc] init];
+    searchBar.placeholder = @"Search images, vectors ...";
+    searchBar.backgroundImage = [UIImage new]; // Makes the search bar transparent
+    searchBar.translatesAutoresizingMaskIntoConstraints = NO;
+    searchBar.backgroundColor = [UIColor clearColor]; // Set the background color to clear
+    // Make the searchBar's textField background transparent
+    UITextField *textField;
+    if (@available(iOS 13.0, *)) {
+        // iOS 13 and later
+        textField = searchBar.searchTextField;
+    } else {
+        // Fallback on earlier versions
+        textField = [searchBar valueForKey:@"_searchField"];
+    }
+    textField.backgroundColor = [UIColor clearColor];
 
+    [grayView addSubview:searchBar];
+    
+    
+    // Create the second button
+    UIButton *button2 = [UIButton buttonWithType:UIButtonTypeCustom];
+    [button2 setImage:[UIImage imageNamed:@"settings"] forState:UIControlStateNormal];
+    
+    button2.layer.cornerRadius = 7;
+    button2.backgroundColor = [UIColor whiteColor];
+    button2.layer.borderWidth = 1.0;
+    button2.layer.cornerRadius = 7;
+    button2.layer.borderColor = [UIColor colorWithRed:226/255.0 green:226/255.0 blue:226/255.0 alpha:1.0].CGColor;
+    
+    // Create a UIStackView
+    UIStackView *stackView = [[UIStackView alloc] initWithArrangedSubviews:@[button1, grayView, button2]];
+    stackView.spacing = 10;
+    stackView.distribution = UIStackViewDistributionFill;
+    stackView.alignment = UIStackViewAlignmentFill;
+    stackView.axis = UILayoutConstraintAxisHorizontal;
+    stackView.translatesAutoresizingMaskIntoConstraints = NO;
+    [topBar addSubview:stackView];
+    
+    // Constraints
+    [NSLayoutConstraint activateConstraints:@[
+        // Constraints for topBar
+        [topBar.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor],
+        [topBar.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+        [topBar.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
+        [topBar.heightAnchor constraintEqualToConstant:116],
+        
+        // Constraints for buttons
+        [button1.widthAnchor constraintEqualToConstant:52],
+        [button2.widthAnchor constraintEqualToConstant:52],
+        
+        // Constraints for stackView
+        [stackView.topAnchor constraintEqualToAnchor:topBar.topAnchor],
+        [stackView.heightAnchor constraintEqualToConstant:52],
+        [stackView.leadingAnchor constraintEqualToAnchor:topBar.leadingAnchor constant:16], // Add some padding on the left
+        [stackView.trailingAnchor constraintEqualToAnchor:topBar.trailingAnchor constant:-16], // Add some padding on the right
+        
+        // Constraints for searchBar
+        [searchBar.topAnchor constraintEqualToAnchor:grayView.topAnchor],
+        [searchBar.bottomAnchor constraintEqualToAnchor:grayView.bottomAnchor],
+        [searchBar.leadingAnchor constraintEqualToAnchor:grayView.leadingAnchor],
+        [searchBar.trailingAnchor constraintEqualToAnchor:grayView.trailingAnchor]
+    ]];
+    
+    
+    // Cancel Button
+    self.cancelButtonTitle = @"Cancel";
+    self.cancelButtonColor = [UIColor blackColor];
+    self.toolbar.cancelTextButton.layer.borderWidth = 1.0;
+    self.toolbar.cancelTextButton.layer.cornerRadius = 7;
+    self.toolbar.cancelTextButton.frame = CGRectMake(16, 16, 134, 32);
+    
+    self.toolbar.cancelTextButton.backgroundColor = [UIColor whiteColor];
+    self.toolbar.cancelTextButton.layer.borderColor = [UIColor colorWithRed:67/255.0 green:10/255.0 blue:224/255.0 alpha:1.0].CGColor;
+    
+    // Hide the buttons
+    [self setRotateClockwiseButtonHidden:YES];
+    [self setRotateButtonsHidden:YES];
+    [self setResetButtonHidden:YES];
+    [self setAspectRatioPickerButtonHidden:YES];
+    
+    self.toolbar.alpha = 1.0f;
+    self.toolbar.backgroundColor = [UIColor whiteColor];
+    self.toolbar.tintColor = [UIColor whiteColor];
+    
+    //    self.view.backgroundColor = [UIColor colorWithRed:246/225.0 green:246/225.0 blue:246/225.0 alpha:1.0];
+    //    self.popoverPresentationController.backgroundColor = [UIColor colorWithRed:246/225.0 green:246/225.0 blue:246/225.0 alpha:1.0];
+    
+    // Done button
+    self.doneButtonTitle = @"Save";
+    UIImage *buttonImage = [UIImage imageNamed:@"done"];
+    [self.toolbar.doneTextButton setImage:buttonImage forState:UIControlStateNormal];
+    self.doneButtonColor = [UIColor whiteColor];
+    self.toolbar.doneTextButton.layer.borderWidth = 1.0;
+    self.toolbar.doneTextButton.layer.cornerRadius = 7;
+    self.toolbar.doneTextButton.frame = CGRectMake(235, 16, 134, 32);
+    self.toolbar.doneTextButton.backgroundColor = [UIColor colorWithRed:67/225.0 green:10/225.0 blue:224/225.0 alpha:1.0];
+    self.toolbar.doneTextButton.layer.borderColor = [UIColor colorWithRed:67/255.0 green:10/525.0 blue:224/255.0 alpha:1.0].CGColor;
+    
+    self.cropView.overlayView.alpha = 0.0;
+    self.cropView.alwaysShowCroppingGrid = YES;
+    self.cropView.backgroundColor = [UIColor whiteColor];
+    
+    self.cropView.translucencyAlwaysHidden = YES;
+    
+    
+    //    self.cropView.autoresizesSubviews = NO;
+    //    self.cropView.overlayView.tintColor = [UIColor whiteColor];
+    //    self.cropView.foregroundContainerView.backgroundColor = [UIColor whiteColor];
+    //    self.cropView.foregroundContainerView.tintColor = [UIColor whiteColor];
+    
+    
     // Set up view controller properties
     self.transitioningDelegate = self;
-    self.view.backgroundColor = self.cropView.backgroundColor;
+    //    self.view.backgroundColor = self.cropView.backgroundColor;
     
     BOOL circularMode = (self.croppingStyle == TOCropViewCroppingStyleCircular);
-
+    
     // Layout the views initially
     self.cropView.frame = [self frameForCropViewWithVerticalLayout:self.verticalLayout];
     self.toolbar.frame = [self frameForToolbarWithVerticalLayout:self.verticalLayout];
-
+    
     // Set up toolbar default behaviour
     self.toolbar.clampButtonHidden = self.aspectRatioPickerButtonHidden || circularMode;
     self.toolbar.rotateClockwiseButtonHidden = self.rotateClockwiseButtonHidden;
@@ -140,6 +274,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 {
     [super viewWillAppear:animated];
     
+    
     // If we're animating onto the screen, set a flag
     // so we can manually control the status bar fade out timing
     if (animated) {
@@ -156,7 +291,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
             [self.navigationController setNavigationBarHidden:YES animated:animated];
             [self.navigationController setToolbarHidden:YES animated:animated];
         }
-
+        
         self.modalTransitionStyle = UIModalTransitionStyleCoverVertical;
     }
     else {
@@ -166,7 +301,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         // The title label will fade
         self.titleLabel.alpha = animated ? 0.0f : 1.0f;
     }
-
+    
     // If an initial aspect ratio was set before presentation, set it now once the rest of
     // the setup will have been done
     if (self.aspectRatioPreset != TOCropViewControllerAspectRatioPresetOriginal) {
@@ -183,14 +318,14 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     
     // Re-enable translucency now that the animation has completed
     self.cropView.simpleRenderMode = NO;
-
+    
     // Now that the presentation animation will have finished, animate
     // the status bar fading out, and if present, the title label fading in
     void (^updateContentBlock)(void) = ^{
         [self setNeedsStatusBarAppearanceUpdate];
         self.titleLabel.alpha = 1.0f;
     };
-
+    
     if (animated) {
         [UIView animateWithDuration:0.3f animations:updateContentBlock];
     }
@@ -207,6 +342,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     if (self.navigationController == nil) {
         [self.cropView setBackgroundImageViewHidden:NO animated:animated];
     }
+    
 }
 
 - (void)viewWillDisappear:(BOOL)animated
@@ -239,7 +375,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     if (self.navigationController) {
         return UIStatusBarStyleLightContent;
     }
-
+    
     // Even though we are a dark theme, leave the status bar
     // as black so it's not obvious that it's still visible during the transition
     return UIStatusBarStyleDefault;
@@ -251,7 +387,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     if (!self.overrideStatusBar) {
         return self.statusBarHidden;
     }
-
+    
     // Work out whether the status bar needs to be visible
     // during a transition animation or not
     BOOL hidden = YES; // Default is yes
@@ -268,7 +404,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 - (CGRect)frameForToolbarWithVerticalLayout:(BOOL)verticalLayout
 {
     UIEdgeInsets insets = self.statusBarSafeInsets;
-
+    
     CGRect frame = CGRectZero;
     if (!verticalLayout) { // In landscape laying out toolbar to the left
         frame.origin.x = insets.left;
@@ -280,7 +416,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         frame.origin.x = 0.0f;
         frame.size.width = CGRectGetWidth(self.view.bounds);
         frame.size.height = kTOCropViewControllerToolbarHeight;
-
+        
         if (self.toolbarPosition == TOCropViewControllerToolbarPositionBottom) {
             frame.origin.y = CGRectGetHeight(self.view.bounds) - (frame.size.height + insets.bottom);
         } else {
@@ -303,27 +439,27 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     else {
         view = self.parentViewController.view;
     }
-
+    
     UIEdgeInsets insets = self.statusBarSafeInsets;
-
+    
     CGRect bounds = view.bounds;
     CGRect frame = CGRectZero;
-
+    
     // Horizontal layout (eg landscape)
     if (!verticalLayout) {
         frame.origin.x = kTOCropViewControllerToolbarHeight + insets.left;
         frame.size.width = CGRectGetWidth(bounds) - frame.origin.x;
-		frame.size.height = CGRectGetHeight(bounds);
+        frame.size.height = CGRectGetHeight(bounds);
     }
     else { // Vertical layout
         frame.size.height = CGRectGetHeight(bounds);
         frame.size.width = CGRectGetWidth(bounds);
-
+        
         // Set Y and adjust for height
         if (self.toolbarPosition == TOCropViewControllerToolbarPositionBottom) {
             frame.size.height -= (insets.bottom + kTOCropViewControllerToolbarHeight);
         } else if (self.toolbarPosition == TOCropViewControllerToolbarPositionTop) {
-			frame.origin.y = kTOCropViewControllerToolbarHeight + insets.top;
+            frame.origin.y = kTOCropViewControllerToolbarHeight + insets.top;
             frame.size.height -= frame.origin.y;
         }
     }
@@ -336,21 +472,21 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     CGRect frame = (CGRect){CGPointZero, size};
     CGFloat viewWidth = self.view.bounds.size.width;
     CGFloat x = 0.0f; // Additional X offset in landscape mode
-
+    
     // Adjust for landscape layout
     if (!verticalLayout) {
         x = kTOCropViewControllerTitleTopPadding;
         if (@available(iOS 11.0, *)) {
             x += self.view.safeAreaInsets.left;
         }
-
+        
         viewWidth -= x;
     }
-
+    
     // Work out horizontal position
     frame.origin.x = ceilf((viewWidth - frame.size.width) * 0.5f);
     if (!verticalLayout) { frame.origin.x += x; }
-
+    
     // Work out vertical position
     if (@available(iOS 11.0, *)) {
         frame.origin.y = self.view.safeAreaInsets.top + kTOCropViewControllerTitleTopPadding;
@@ -358,36 +494,36 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     else {
         frame.origin.y = self.statusBarHeight + kTOCropViewControllerTitleTopPadding;
     }
-
+    
     return frame;
 }
 
 - (void)adjustCropViewInsets
 {
     UIEdgeInsets insets = self.statusBarSafeInsets;
-
+    
     // If there is no title text, inset the top of the content as high as possible
     if (!self.titleLabel.text.length) {
         if (self.verticalLayout) {
-          if (self.toolbarPosition == TOCropViewControllerToolbarPositionTop) {
-            self.cropView.cropRegionInsets = UIEdgeInsetsMake(0.0f, 0.0f, insets.bottom, 0.0f);
-          }
-          else { // Add padding to the top otherwise
-            self.cropView.cropRegionInsets = UIEdgeInsetsMake(insets.top, 0.0f, 0.0, 0.0f);
-          }
+            if (self.toolbarPosition == TOCropViewControllerToolbarPositionTop) {
+                self.cropView.cropRegionInsets = UIEdgeInsetsMake(0.0f, 0.0f, insets.bottom, 0.0f);
+            }
+            else { // Add padding to the top otherwise
+                self.cropView.cropRegionInsets = UIEdgeInsetsMake(insets.top, 0.0f, 0.0, 0.0f);
+            }
         }
         else {
             self.cropView.cropRegionInsets = UIEdgeInsetsMake(0.0f, 0.0f, insets.bottom, 0.0f);
         }
-
+        
         return;
     }
-
+    
     // Work out the size of the title label based on the crop view size
     CGRect frame = self.titleLabel.frame;
     frame.size = [self.titleLabel sizeThatFits:self.cropView.frame.size];
     self.titleLabel.frame = frame;
-
+    
     // Set out the appropriate inset for that
     CGFloat verticalInset = self.statusBarHeight;
     verticalInset += kTOCropViewControllerTitleTopPadding;
@@ -398,7 +534,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 - (void)adjustToolbarInsets
 {
     UIEdgeInsets insets = UIEdgeInsetsZero;
-
+    
     if (@available(iOS 11.0, *)) {
         // Add padding to the left in landscape mode
         if (!self.verticalLayout) {
@@ -419,7 +555,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
             insets.top = self.statusBarHeight;
         }
     }
-
+    
     // Update the toolbar with these properties
     self.toolbar.backgroundViewOutsets = insets;
     self.toolbar.statusBarHeightInset = self.statusBarHeight;
@@ -436,11 +572,11 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 - (void)viewDidLayoutSubviews
 {
     [super viewDidLayoutSubviews];
-
+    
     self.cropView.frame = [self frameForCropViewWithVerticalLayout:self.verticalLayout];
     [self adjustCropViewInsets];
     [self.cropView moveCroppedContentToCenterAnimated:NO];
-
+    
     if (self.firstTime == NO) {
         [self.cropView performInitialSetup];
         self.firstTime = YES;
@@ -450,7 +586,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         self.titleLabel.frame = [self frameForTitleLabelWithSize:self.titleLabel.frame.size verticalLayout:self.verticalLayout];
         [self.cropView moveCroppedContentToCenterAnimated:NO];
     }
-
+    
     [UIView performWithoutAnimation:^{
         self.toolbar.frame = [self frameForToolbarWithVerticalLayout:self.verticalLayout];
         [self adjustToolbarInsets];
@@ -472,7 +608,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         self.toolbarSnapshotView.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleRightMargin;
     }
     [self.view addSubview:self.toolbarSnapshotView];
-
+    
     // Set up the toolbar frame to be just off t
     CGRect frame = [self frameForToolbarWithVerticalLayout:UIInterfaceOrientationIsPortrait(toInterfaceOrientation)];
     if (UIInterfaceOrientationIsLandscape(toInterfaceOrientation)) {
@@ -482,7 +618,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         frame.origin.y = self.view.bounds.size.height;
     }
     self.toolbar.frame = frame;
-
+    
     [self.toolbar layoutIfNeeded];
     self.toolbar.alpha = 0.0f;
     
@@ -500,19 +636,19 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     for (CALayer *sublayer in self.toolbar.layer.sublayers) {
         [sublayer removeAllAnimations];
     }
-
+    
     // On iOS 11, since these layout calls are done multiple times, if we don't aggregate from the
     // current state, the animation breaks.
     [UIView animateWithDuration:duration
                           delay:0.0f
                         options:UIViewAnimationOptionBeginFromCurrentState
                      animations:
-    ^{
+     ^{
         self.cropView.frame = [self frameForCropViewWithVerticalLayout:!UIInterfaceOrientationIsLandscape(toInterfaceOrientation)];
         self.toolbar.frame = [self frameForToolbarWithVerticalLayout:UIInterfaceOrientationIsPortrait(toInterfaceOrientation)];
         [self.cropView performRelayoutForRotation];
     } completion:nil];
-
+    
     self.toolbarSnapshotView.alpha = 0.0f;
     self.toolbar.alpha = 1.0f;
 }
@@ -572,22 +708,22 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     BOOL verticalCropBox = self.cropView.cropBoxAspectRatioIsPortrait;
     
     // Get the resource bundle depending on the framework/dependency manager we're using
-	NSBundle *resourceBundle = TO_CROP_VIEW_RESOURCE_BUNDLE_FOR_OBJECT(self);
+    NSBundle *resourceBundle = TO_CROP_VIEW_RESOURCE_BUNDLE_FOR_OBJECT(self);
     
     //Prepare the localized options
-	NSString *cancelButtonTitle = NSLocalizedStringFromTableInBundle(@"Cancel", @"TOCropViewControllerLocalizable", resourceBundle, nil);
-	NSString *originalButtonTitle = NSLocalizedStringFromTableInBundle(@"Original", @"TOCropViewControllerLocalizable", resourceBundle, nil);
-	NSString *squareButtonTitle = NSLocalizedStringFromTableInBundle(@"Square", @"TOCropViewControllerLocalizable", resourceBundle, nil);
+    NSString *cancelButtonTitle = NSLocalizedStringFromTableInBundle(@"Cancel", @"TOCropViewControllerLocalizable", resourceBundle, nil);
+    NSString *originalButtonTitle = NSLocalizedStringFromTableInBundle(@"Original", @"TOCropViewControllerLocalizable", resourceBundle, nil);
+    NSString *squareButtonTitle = NSLocalizedStringFromTableInBundle(@"Square", @"TOCropViewControllerLocalizable", resourceBundle, nil);
     
     //Prepare the list that will be fed to the alert view/controller
     
     // Ratio titles according to the order of enum TOCropViewControllerAspectRatioPreset
     NSArray<NSString *> *portraitRatioTitles = @[originalButtonTitle, squareButtonTitle, @"2:3", @"3:5", @"3:4", @"4:5", @"5:7", @"9:16"];
     NSArray<NSString *> *landscapeRatioTitles = @[originalButtonTitle, squareButtonTitle, @"3:2", @"5:3", @"4:3", @"5:4", @"7:5", @"16:9"];
-
+    
     NSMutableArray *ratioValues = [NSMutableArray array];
     NSMutableArray *itemStrings = [NSMutableArray array];
-
+    
     if (self.allowedAspectRatios == nil) {
         for (NSInteger i = 0; i < TOCropViewControllerAspectRatioPresetCustom; i++) {
             NSString *itemTitle = verticalCropBox ? portraitRatioTitles[i] : landscapeRatioTitles[i];
@@ -609,10 +745,10 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         [itemStrings addObject:self.customAspectRatioName];
         [ratioValues addObject:@(TOCropViewControllerAspectRatioPresetCustom)];
     }
-
+    
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     [alertController addAction:[UIAlertAction actionWithTitle:cancelButtonTitle style:UIAlertActionStyleCancel handler:nil]];
-
+    
     //Add each item to the alert controller
     for (NSInteger i = 0; i < itemStrings.count; i++) {
         id handlerBlock = ^(UIAlertAction *action) {
@@ -622,7 +758,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         UIAlertAction *action = [UIAlertAction actionWithTitle:itemStrings[i] style:UIAlertActionStyleDefault handler:handlerBlock];
         [alertController addAction:action];
     }
-
+    
     alertController.modalPresentationStyle = UIModalPresentationPopover;
     UIPopoverPresentationController *presentationController = [alertController popoverPresentationController];
     presentationController.sourceView = self.toolbar;
@@ -670,7 +806,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     // If the aspect ratio lock is on, allow a aspect ratio swap
     // only if the allowDimensionSwap option is specified.
     BOOL aspectRatioCanSwapDimensions = !self.aspectRatioLockEnabled ||
-                                (self.aspectRatioLockEnabled && self.aspectRatioLockDimensionSwapEnabled);
+    (self.aspectRatioLockEnabled && self.aspectRatioLockDimensionSwapEnabled);
     
     //If the image is a portrait shape, flip the aspect ratio to match
     if (self.cropView.cropBoxAspectRatioIsPortrait &&
@@ -739,7 +875,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     [viewController presentViewController:self.parentViewController ? self.parentViewController : self
                                  animated:YES
                                completion:^
-    {
+     {
         typeof (self) strongSelf = weakSelf;
         if (completion) {
             completion();
@@ -781,7 +917,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     self.transitionController.toView    = toView;
     self.transitionController.toFrame   = frame;
     self.prepareForTransitionHandler    = setup;
-
+    
     [viewController dismissViewControllerAnimated:YES completion:^ {
         if (completion) { completion(); }
     }];
@@ -799,12 +935,12 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     self.transitionController.prepareForTransitionHandler = ^{
         typeof (self) strongSelf = weakSelf;
         TOCropViewControllerTransitioning *transitioning = strongSelf.transitionController;
-
+        
         transitioning.toFrame = [strongSelf.cropView convertRect:strongSelf.cropView.cropBoxFrame toView:strongSelf.view];
         if (!CGRectIsEmpty(transitioning.fromFrame) || transitioning.fromView) {
             strongSelf.cropView.croppingViewsHidden = YES;
         }
-
+        
         if (strongSelf.prepareForTransitionHandler) {
             strongSelf.prepareForTransitionHandler();
         }
@@ -850,46 +986,46 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         [self dismissCropViewController];
         return;
     }
-
+    
     // Get the resource bundle depending on the framework/dependency manager we're using
     NSBundle *resourceBundle = TO_CROP_VIEW_RESOURCE_BUNDLE_FOR_OBJECT(self);
-
+    
     UIAlertController *alertController = [UIAlertController alertControllerWithTitle:nil
                                                                              message:nil
                                                                       preferredStyle:UIAlertControllerStyleActionSheet];
     alertController.popoverPresentationController.sourceView = self.toolbar.visibleCancelButton;
-
+    
     NSString *yesButtonTitle = NSLocalizedStringFromTableInBundle(@"Delete Changes", @"TOCropViewControllerLocalizable", resourceBundle, nil);
     NSString *noButtonTitle = NSLocalizedStringFromTableInBundle(@"Cancel", @"TOCropViewControllerLocalizable", resourceBundle, nil);
-
+    
     __weak typeof (self) weakSelf = self;
     UIAlertAction *yesAction = [UIAlertAction actionWithTitle:yesButtonTitle style:UIAlertActionStyleDestructive handler:^(UIAlertAction *action) {
         [weakSelf dismissCropViewController];
     }];
     [alertController addAction:yesAction];
-
+    
     UIAlertAction *noAction = [UIAlertAction actionWithTitle:noButtonTitle style:UIAlertActionStyleCancel handler:nil];
     [alertController addAction:noAction];
-
+    
     [weakSelf presentViewController:alertController animated:YES completion: nil];
 }
 
 - (void)dismissCropViewController
 {
     bool isDelegateOrCallbackHandled = NO;
-
+    
     // Check if the delegate method was implemented and call if so
     if ([self.delegate respondsToSelector:@selector(cropViewController:didFinishCancelled:)]) {
         [self.delegate cropViewController:self didFinishCancelled:YES];
         isDelegateOrCallbackHandled = YES;
     }
-
+    
     // Check if the block version was implemented and call if so
     if (self.onDidFinishCancelled != nil) {
         self.onDidFinishCancelled(YES);
         isDelegateOrCallbackHandled = YES;
     }
-
+    
     // If neither callbacks were implemented, perform a default dismissing animation
     if (!isDelegateOrCallbackHandled) {
         if (self.navigationController && self.navigationController.viewControllers.count > 1) {
@@ -905,7 +1041,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 {
     CGRect cropFrame = self.cropView.imageCropFrame;
     NSInteger angle = self.cropView.angle;
-
+    
     //If desired, when the user taps done, show an activity sheet
     if (self.showActivitySheetOnDone) {
         TOActivityCroppedImageProvider *imageItem = [[TOActivityCroppedImageProvider alloc] initWithImage:self.image cropFrame:cropFrame angle:angle circular:(self.croppingStyle == TOCropViewCroppingStyleCircular)];
@@ -918,14 +1054,14 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         
         UIActivityViewController *activityController = [[UIActivityViewController alloc] initWithActivityItems:activityItems applicationActivities:self.applicationActivities];
         activityController.excludedActivityTypes = self.excludedActivityTypes;
-
+        
         activityController.modalPresentationStyle = UIModalPresentationPopover;
         activityController.popoverPresentationController.sourceView = self.toolbar;
         activityController.popoverPresentationController.sourceRect = self.toolbar.doneButtonFrame;
         [self presentViewController:activityController animated:YES completion:nil];
-
+        
         __weak typeof(activityController) blockController = activityController;
-
+        
         activityController.completionWithItemsHandler = ^(NSString *activityType, BOOL completed, NSArray *returnedItems, NSError *activityError) {
             if (!completed) {
                 return;
@@ -952,10 +1088,10 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
                 }
             }
         };
-
+        
         return;
     } else {
-      self.toolbar.doneTextButton.enabled = false;
+        self.toolbar.doneTextButton.enabled = false;
     }
     
     BOOL isCallbackOrDelegateHandled = NO;
@@ -965,20 +1101,20 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         [self.delegate cropViewController:self didCropImageToRect:cropFrame angle:angle];
         isCallbackOrDelegateHandled = YES;
     }
-
+    
     if (self.onDidCropImageToRect != nil) {
         self.onDidCropImageToRect(cropFrame, angle);
         isCallbackOrDelegateHandled = YES;
     }
-
+    
     // Check if the circular APIs were implemented
     BOOL isCircularImageDelegateAvailable = [self.delegate respondsToSelector:@selector(cropViewController:didCropToCircularImage:withRect:angle:)];
     BOOL isCircularImageCallbackAvailable = self.onDidCropToCircleImage != nil;
-
+    
     // Check if non-circular was implemented
     BOOL isDidCropToImageDelegateAvailable = [self.delegate respondsToSelector:@selector(cropViewController:didCropToImage:withRect:angle:)];
     BOOL isDidCropToImageCallbackAvailable = self.onDidCropToRect != nil;
-
+    
     //If cropping circular and the circular generation delegate/block is implemented, call it
     if (self.croppingStyle == TOCropViewCroppingStyleCircular && (isCircularImageDelegateAvailable || isCircularImageCallbackAvailable)) {
         UIImage *image = [self.image croppedImageWithFrame:cropFrame angle:angle circularClip:YES];
@@ -1010,7 +1146,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
             if (isDidCropToImageDelegateAvailable) {
                 [self.delegate cropViewController:self didCropToImage:image withRect:cropFrame angle:angle];
             }
-
+            
             if (isDidCropToImageCallbackAvailable) {
                 self.onDidCropToRect(image, cropFrame, angle);
             }
@@ -1034,14 +1170,14 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 - (void)setTitle:(NSString *)title
 {
     [super setTitle:title];
-
+    
     if (self.title.length == 0) {
         [_titleLabel removeFromSuperview];
         _cropView.cropRegionInsets = UIEdgeInsetsMake(0, 0, 0, 0);
         _titleLabel = nil;
         return;
     }
-
+    
     self.titleLabel.text = self.title;
     [self.titleLabel sizeToFit];
     self.titleLabel.frame = [self frameForTitleLabelWithSize:self.titleLabel.frame.size verticalLayout:self.verticalLayout];
@@ -1057,10 +1193,16 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     self.toolbar.cancelTextButtonTitle = title;
 }
 
+- (void)setCancelButtonBackgroundColor:(UIColor *)color
+{
+    self.toolbar.cancelTextButton.layer.borderColor = color.CGColor;
+}
+
+
 - (void)setShowOnlyIcons:(BOOL)showOnlyIcons {
     self.toolbar.showOnlyIcons = showOnlyIcons;
 }
-  
+
 - (void)setDoneButtonColor:(UIColor *)color {
     self.toolbar.doneButtonColor = color;
 }
@@ -1095,7 +1237,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 {
     if (!self.title.length) { return nil; }
     if (_titleLabel) { return _titleLabel; }
-
+    
     _titleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
     _titleLabel.font = [UIFont preferredFontForTextStyle:UIFontTextStyleHeadline];
     _titleLabel.backgroundColor = [UIColor clearColor];
@@ -1105,9 +1247,9 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     _titleLabel.clipsToBounds = YES;
     _titleLabel.textAlignment = NSTextAlignmentCenter;
     _titleLabel.text = self.title;
-
+    
     [self.view insertSubview:self.titleLabel aboveSubview:self.cropView];
-
+    
     return _titleLabel;
 }
 
@@ -1230,7 +1372,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 #if TARGET_OS_MACCATALYST
     return YES;
 #endif
-
+    
     return CGRectGetWidth(self.view.bounds) < CGRectGetHeight(self.view.bounds);
 }
 
@@ -1274,17 +1416,17 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     CGFloat statusBarHeight = 0.0f;
     if (@available(iOS 11.0, *)) {
         statusBarHeight = self.view.safeAreaInsets.top;
-
+        
         // We do need to include the status bar height on devices
         // that have a physical hardware inset, like an iPhone X notch
         BOOL hardwareRelatedInset = self.view.safeAreaInsets.bottom > FLT_EPSILON
-                                    && UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone;
-
+        && UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone;
+        
         // Always have insetting on Mac Catalyst
-        #if TARGET_OS_MACCATALYST
+#if TARGET_OS_MACCATALYST
         hardwareRelatedInset = YES;
-        #endif
-
+#endif
+        
         // Unless the status bar is visible, or we need to account
         // for a hardware notch, always treat the status bar height as zero
         if (self.statusBarHidden && !hardwareRelatedInset) {
@@ -1313,7 +1455,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     else {
         insets.top = self.statusBarHeight;
     }
-
+    
     return insets;
 }
 
