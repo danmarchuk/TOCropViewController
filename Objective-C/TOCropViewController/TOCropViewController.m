@@ -237,6 +237,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     self.cropView.alwaysShowCroppingGrid = YES;
     self.cropView.backgroundColor = [UIColor whiteColor];
     
+    
     self.cropView.translucencyAlwaysHidden = YES;
     
     
@@ -1219,6 +1220,7 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
         _cropView = [[TOCropView alloc] initWithCroppingStyle:self.croppingStyle image:self.image];
         _cropView.delegate = self;
         _cropView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        _cropView.backgroundColor = [[UIColor whiteColor] colorWithAlphaComponent:0.5];
         [self.view addSubview:_cropView];
     }
     return _cropView;

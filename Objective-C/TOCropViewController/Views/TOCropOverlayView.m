@@ -22,7 +22,7 @@
 
 #import "TOCropOverlayView.h"
 
-static const CGFloat kTOCropOverLayerCornerWidth = 20.0f;
+static const CGFloat kTOCropOverLayerCornerWidth = 60.0f;
 
 @interface TOCropOverlayView ()
 
@@ -36,6 +36,9 @@ static const CGFloat kTOCropOverLayerCornerWidth = 20.0f;
 @property (nonatomic, strong) NSArray *bottomRightLineViews;
 @property (nonatomic, strong) NSArray *topRightLineViews;
 
+@property (nonatomic, strong) UIColor *cornerLineColor; // the color of the cornerlines (the thicc ones)
+
+
 @end
 
 @implementation TOCropOverlayView
@@ -44,24 +47,59 @@ static const CGFloat kTOCropOverLayerCornerWidth = 20.0f;
 {
     if (self = [super initWithFrame:frame]) {
         self.clipsToBounds = NO;
+        
+        self.cornerLineColor = [UIColor blackColor];
         [self setup];
     }
     
     return self;
 }
 
+- (void)setCornerLineColor:(UIColor *)cornerLineColor {
+    _cornerLineColor = cornerLineColor;
+
+    for (UIView *cornerLineView in self.topLeftLineViews) {
+        cornerLineView.backgroundColor = cornerLineColor;
+        cornerLineView.tintColor = cornerLineColor;
+    }
+
+    for (UIView *cornerLineView in self.bottomLeftLineViews) {
+        cornerLineView.backgroundColor = cornerLineColor;
+        cornerLineView.tintColor = cornerLineColor;
+    }
+
+    for (UIView *cornerLineView in self.topRightLineViews) {
+        cornerLineView.backgroundColor = cornerLineColor;
+        cornerLineView.tintColor = cornerLineColor;
+    }
+
+    for (UIView *cornerLineView in self.bottomRightLineViews) {
+        cornerLineView.backgroundColor = cornerLineColor;
+        cornerLineView.tintColor = cornerLineColor;
+    }
+}
+
+
 - (void)setup
 {
     UIView *(^newLineView)(void) = ^UIView *(void){
         return [self createNewLineView];
     };
+    
+    UIView *(^newCornerLineView)(void) = ^UIView *(void) {
+        return  [self createNewLineView];
+    };
+    
+
 
     _outerLineViews     = @[newLineView(), newLineView(), newLineView(), newLineView()];
     
-    _topLeftLineViews   = @[newLineView(), newLineView()];
-    _bottomLeftLineViews = @[newLineView(), newLineView()];
-    _topRightLineViews  = @[newLineView(), newLineView()];
-    _bottomRightLineViews = @[newLineView(), newLineView()];
+    _topLeftLineViews   = @[newCornerLineView(), newCornerLineView()];
+    _bottomLeftLineViews = @[newCornerLineView(), newCornerLineView()];
+    _topRightLineViews  = @[newCornerLineView(), newCornerLineView()];
+    _bottomRightLineViews = @[newCornerLineView(), newCornerLineView()];
+    
+    self.cornerLineColor = [UIColor blackColor];
     
     self.displayHorizontalGridLines = YES;
     self.displayVerticalGridLines = YES;
@@ -90,7 +128,6 @@ static const CGFloat kTOCropOverLayerCornerWidth = 20.0f;
     //border lines
     for (NSInteger i = 0; i < 4; i++) {
         UIView *lineView = self.outerLineViews[i];
-        
         CGRect frame = CGRectZero;
         switch (i) {
             case 0: frame = (CGRect){0,-1.0f,boundsSize.width+2.0f, 1.0f}; break; //top
@@ -98,7 +135,6 @@ static const CGFloat kTOCropOverLayerCornerWidth = 20.0f;
             case 2: frame = (CGRect){-1.0f,boundsSize.height,boundsSize.width+2.0f,1.0f}; break; //bottom
             case 3: frame = (CGRect){-1.0f,0,1.0f,boundsSize.height+1.0f}; break; //left
         }
-        
         lineView.frame = frame;
     }
     
@@ -126,7 +162,6 @@ static const CGFloat kTOCropOverLayerCornerWidth = 20.0f;
                 horizontalFrame = (CGRect){-3.0f,boundsSize.height,kTOCropOverLayerCornerWidth+3.0f,3.0f};
                 break;
         }
-        
         [cornerLine[0] setFrame:verticalFrame];
         [cornerLine[1] setFrame:horizontalFrame];
     }
@@ -192,7 +227,7 @@ static const CGFloat kTOCropOverLayerCornerWidth = 20.0f;
     }];
     
     if (_displayHorizontalGridLines) {
-        self.horizontalGridLines = @[[self createNewLineView], [self createNewLineView]];
+        self.horizontalGridLines = @[[self createNewLineView], [self createNewLineView], [self createNewLineView]];
     } else {
         self.horizontalGridLines = @[];
     }
@@ -207,7 +242,7 @@ static const CGFloat kTOCropOverLayerCornerWidth = 20.0f;
     }];
     
     if (_displayVerticalGridLines) {
-        self.verticalGridLines = @[[self createNewLineView], [self createNewLineView]];
+        self.verticalGridLines = @[[self createNewLineView], [self createNewLineView], [self createNewLineView]];
     } else {
         self.verticalGridLines = @[];
     }
@@ -223,7 +258,14 @@ static const CGFloat kTOCropOverLayerCornerWidth = 20.0f;
 
 - (nonnull UIView *)createNewLineView {
     UIView *newLine = [[UIView alloc] initWithFrame:CGRectZero];
-    newLine.backgroundColor = [UIColor whiteColor];
+    newLine.backgroundColor = [UIColor colorWithRed:116.0f/255.0f green:116.0f/255.0f blue:116.0f/255.0f alpha:1.0f];
+    [self addSubview:newLine];
+    return newLine;
+}
+
+- (nonnull UIView*)createNewCornerLineView {
+    UIView *newLine = [[UIView alloc] initWithFrame:CGRectZero];
+    newLine.backgroundColor = self.cornerLineColor;
     [self addSubview:newLine];
     return newLine;
 }
