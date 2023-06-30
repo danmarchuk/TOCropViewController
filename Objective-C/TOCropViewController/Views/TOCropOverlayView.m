@@ -47,8 +47,8 @@ static const CGFloat kTOCropOverLayerCornerWidth = 60.0f;
 {
     if (self = [super initWithFrame:frame]) {
         self.clipsToBounds = NO;
-        
         self.cornerLineColor = [UIColor blackColor];
+        self.backgroundColor = [UIColor colorWithRed:1.0 green:1.0 blue:1.0 alpha:0.2];
         [self setup];
     }
     
@@ -90,8 +90,6 @@ static const CGFloat kTOCropOverLayerCornerWidth = 60.0f;
         return  [self createNewLineView];
     };
     
-
-
     _outerLineViews     = @[newLineView(), newLineView(), newLineView(), newLineView()];
     
     _topLeftLineViews   = @[newCornerLineView(), newCornerLineView()];
